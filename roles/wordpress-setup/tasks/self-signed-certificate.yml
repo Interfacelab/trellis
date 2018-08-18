@@ -23,4 +23,4 @@ EOF\n
     - sites_use_ssl
     - ssl_enabled
     - item.value.ssl.provider | default('manual') == 'self-signed'
-  notify: reload nginx
+  notify: reload webserver

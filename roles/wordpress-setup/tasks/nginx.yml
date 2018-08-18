@@ -6,7 +6,7 @@
     mode: 0640
   with_dict: "{{ wordpress_sites }}"
   when: ssl_enabled and item.value.ssl.cert is defined
-  notify: reload nginx
+  notify: reload webserver
 
 - name: Copy SSL key
   copy:
@@ -15,7 +15,7 @@
     mode: 0600
   with_dict: "{{ wordpress_sites }}"
   when: ssl_enabled and item.value.ssl.key is defined
-  notify: reload nginx
+  notify: reload webserver
 
 - import_tasks: "{{ playbook_dir }}/roles/common/tasks/disable_challenge_sites.yml"
 
@@ -25,7 +25,7 @@
     dest: "{{ nginx_path }}/sites-available/{{ item.src | basename | regex_replace('.j2$', '') }}"
   with_items: "{{ nginx_sites_confs }}"
   when: item.enabled | default(true)
-  notify: reload nginx
+  notify: reload webserver
   tags: nginx-sites
 
 - name: Enable or disable Nginx sites
@@ -35,21 +35,21 @@
     state: "{{ item.enabled | default(true) | ternary('link', 'absent') }}"
     force: yes
   with_items: "{{ nginx_sites_confs }}"
-  notify: reload nginx
+  notify: reload webserver
   tags: nginx-sites
 
 - name: Create Nginx conf for challenges location
   template:
     src: "{{ playbook_dir }}/roles/letsencrypt/templates/acme-challenge-location.conf.j2"
     dest: "{{ nginx_path }}/acme-challenge-location.conf"
-  notify: reload nginx
+  notify: reload webserver
 
 - name: Create WordPress configuration for Nginx
   template:
     src: "{{ item.value.nginx_wordpress_site_conf | default(nginx_wordpress_site_conf) }}"
     dest: "{{ nginx_path }}/sites-available/{{ item.key }}.conf"
   with_dict: "{{ wordpress_sites }}"
-  notify: reload nginx
+  notify: reload webserver
   tags: nginx-includes
 
 - name: Enable WordPress site
@@ -60,4 +60,4 @@
     group: root
     state: link
   with_dict: "{{ wordpress_sites }}"
-  notify: reload nginx
+  notify: reload webserver

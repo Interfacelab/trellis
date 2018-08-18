@@ -44,4 +44,4 @@
     chdir: "{{ acme_tiny_data_directory }}"
   register: generate_certs
   changed_when: generate_certs.stdout is defined and 'Created' in generate_certs.stdout
-  notify: reload nginx
+  notify: reload webserver

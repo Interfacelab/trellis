@@ -1,0 +1,14 @@
+---
+- name: restart apache2
+  service:
+    name: apache2
+    state: reloaded
+  listen: "reload webserver"
+  when: web_server == "apache2"
+
+- name: restart nginx
+  service:
+    name: nginx
+    state: reloaded
+  listen: "reload webserver"
+  when: web_server == "nginx"

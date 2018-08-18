@@ -31,7 +31,7 @@
     src: "{{ item }}"
     dest: "{{ nginx_path }}/includes.d/{{ item | regex_replace(nginx_includes_pattern, '\\2') }}"
   with_items: "{{ nginx_includes_templates.files | map(attribute='path') | list | sort(True) }}"
-  notify: reload nginx
+  notify: reload webserver
 
 - name: Retrieve list of existing files in includes.d
   find:
@@ -51,4 +51,4 @@
                   ) | list
                }}"
   when: nginx_includes_d_cleanup
-  notify: reload nginx
+  notify: reload webserver
