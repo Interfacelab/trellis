@@ -1,0 +1,33 @@
+# {{ ansible_managed }}
+
+<VirtualHost *:80>
+	{% for serverName in site_hosts_canonical | union(multisite_subdomains_wildcards) %}
+	ServerName {{ serverName }}
+	{% endfor %}
+
+	ServerAdmin webmaster@localhost
+	DocumentRoot {{ www_root }}/{{ item.key }}/{{ item.value.current_path | default('current') }}/web/
+
+	Protocols h2 h2c http/1.1
+
+	ErrorLog {{ www_root }}/{{ item.key }}/logs/error.log
+	CustomLog {{ www_root }}/{{ item.key }}/logs/access.log combined
+
+	<Directory "{{ www_root }}/{{ item.key }}/{{ item.value.current_path | default('current') }}/web/">
+		DirectoryIndex index.html index.php /index.php
+		Options FollowSymLinks
+		AllowOverride None
+		Require all granted
+
+		<IfModule mod_rewrite.c>
+		RewriteEngine On
+		RewriteBase /
+		RewriteRule ^index\.php$ - [L]
+		RewriteCond %{REQUEST_FILENAME} !-f
+		RewriteCond %{REQUEST_FILENAME} !-d
+		RewriteRule . /index.php [L]
+		</IfModule>
+	</Directory>	
+</VirtualHost>
+
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet

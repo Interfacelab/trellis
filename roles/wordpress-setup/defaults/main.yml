@@ -1,5 +1,6 @@
 site_uses_local_db: "{{ site_env.db_host == 'localhost' }}"
-nginx_wordpress_site_conf: wordpress-site.conf.j2
+apache2_wordpress_site_conf: apache2/wordpress-site.conf.j2
+nginx_wordpress_site_conf: nginx/wordpress-site.conf.j2
 nginx_ssl_path: "{{ nginx_path }}/ssl"
 
 ssl_default_site:
@@ -12,8 +13,8 @@ ssl_default_site:
     multisite: {}
 
 nginx_sites_confs:
-  - src: no-default.conf.j2
-  - src: ssl.no-default.conf.j2
+  - src: nginx/no-default.conf.j2
+  - src: nginx/ssl.no-default.conf.j2
     enabled: "{{ sites_use_ssl }}"
 
 # HSTS defaults

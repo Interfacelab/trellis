@@ -1,0 +1,63 @@
+---
+# - name: Copy SSL cert
+#   copy:
+#     src: "{{ item.value.ssl.cert }}"
+#     dest: "{{ nginx_ssl_path }}/{{ item.value.ssl.cert | basename }}"
+#     mode: 0640
+#   with_dict: "{{ wordpress_sites }}"
+#   when: ssl_enabled and item.value.ssl.cert is defined
+#   notify: reload webserver
+
+# - name: Copy SSL key
+#   copy:
+#     src: "{{ item.value.ssl.key }}"
+#     dest: "{{ nginx_ssl_path }}/{{ item.value.ssl.key | basename }}"
+#     mode: 0600
+#   with_dict: "{{ wordpress_sites }}"
+#   when: ssl_enabled and item.value.ssl.key is defined
+#   notify: reload webserver
+
+# - import_tasks: "{{ playbook_dir }}/roles/common/tasks/disable_challenge_sites.yml"
+
+# - name: Create Nginx available sites
+#   template:
+#     src: "{{ item.src }}"
+#     dest: "{{ nginx_path }}/sites-available/{{ item.src | basename | regex_replace('.j2$', '') }}"
+#   with_items: "{{ nginx_sites_confs }}"
+#   when: item.enabled | default(true)
+#   notify: reload webserver
+#   tags: nginx-sites
+
+# - name: Enable or disable Nginx sites
+#   file:
+#     path: "{{ nginx_path }}/sites-enabled/{{ item.src | basename | regex_replace('.j2$', '') }}"
+#     src: "{{ nginx_path }}/sites-available/{{ item.src | basename | regex_replace('.j2$', '') }}"
+#     state: "{{ item.enabled | default(true) | ternary('link', 'absent') }}"
+#     force: yes
+#   with_items: "{{ nginx_sites_confs }}"
+#   notify: reload webserver
+#   tags: nginx-sites
+
+# - name: Create Nginx conf for challenges location
+#   template:
+#     src: "{{ playbook_dir }}/roles/letsencrypt/templates/acme-challenge-location.conf.j2"
+#     dest: "{{ nginx_path }}/acme-challenge-location.conf"
+#   notify: reload webserver
+
+- name: Create WordPress configuration for Apache2
+  template:
+    src: "{{ item.value.apache2_wordpress_site_conf | default(apache2_wordpress_site_conf) }}"
+    dest: "{{ apache2_path }}/sites-available/{{ item.key }}.conf"
+  with_dict: "{{ wordpress_sites }}"
+  notify: reload webserver
+  tags: apache2-includes
+
+- name: Enable WordPress site
+  file:
+    src: "{{ apache2_path }}/sites-available/{{ item.key }}.conf"
+    dest: "{{ apache2_path }}/sites-enabled/{{ item.key }}.conf"
+    owner: root
+    group: root
+    state: link
+  with_dict: "{{ wordpress_sites }}"
+  notify: reload webserver
