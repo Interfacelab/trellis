@@ -1,0 +1,83 @@
+---
+- name: Add Apache2 PPA
+  apt_repository:
+    repo: "{{ apache2_ppa }}"
+    update_cache: yes
+
+- name: Install Apache2
+  apt:
+    name: "{{ apache2_package }}"
+    state: "{{ apache2_package_state | default(apt_package_state) }}"
+    cache_valid_time: "{{ apt_cache_valid_time }}"
+
+- name: Remove default envvars
+  file:
+    path: "{{ apache2_path }}/envvars"
+    state: absent
+
+- name: Create envvars
+  template:
+    src: envvars.j2
+    dest: "{{ apache2_path }}/envvars"
+  notify: reload webserver
+
+- name: Disable Apache2 Modules
+  apache2_module:
+    state: absent
+    name: "{{ item }}"
+  with_items: "{{ apache2_disabled_mods }}"
+  notify: reload webserver
+
+- name: Enable Apache2 Modules
+  apache2_module:
+    state: present
+    name: "{{ item }}"
+  with_items: "{{ apache2_enabled_mods }}"
+  notify: reload webserver
+
+- name: Remove Apache2 FPM Config
+  file:
+    path: "{{ apache2_path }}/conf-available/php7.2-fpm.conf"
+    state: absent
+
+- name: Create Apache2 FPM Config
+  template:
+    src: php7.2-fpm.conf.j2
+    dest: "{{ apache2_path }}/conf-available/php7.2-fpm.conf"
+  
+- name: Disable Apache2 Configs
+  command: a2disconf "{{ item }}"
+  with_items: "{{ apache2_disabled_configs }}"
+  notify: reload webserver
+
+- name: Enable Apache2 Configs
+  command: a2enconf "{{ item }}"
+  with_items: "{{ apache2_enabled_configs }}"
+  notify: reload webserver
+
+- name: Disable default server
+  file:
+    path: "{{ apache2_path }}/sites-available/000-default.conf"
+    state: absent
+
+- name: Disable default server
+  file:
+    path: "{{ apache2_path }}/sites-enabled/000-default.conf"
+    state: absent
+
+- name: Disable default https server
+  file:
+    path: "{{ apache2_path }}/sites-available/default-ssl.conf"
+    state: absent
+
+- name: Disable default https server
+  file:
+    path: "{{ apache2_path }}/sites-enabled/default-ssl.conf"
+    state: absent
+
+- name: Enable Apache2 to start on boot
+  service:
+    name: apache2
+    enabled: yes
+    state: started
+    use: service
