@@ -1,4 +1,23 @@
 ---
+- name: Verify dict format for apt package component variables
+  fail:
+    msg: "{{ lookup('template', 'package_vars_wrong_format_msg.j2') }}"
+  when: package_vars_wrong_format | count
+  vars:
+    package_vars:
+      memcached_packages_default: "{{ memcached_packages_default }}"
+      memcached_packages_custom: "{{ memcached_packages_custom }}"
+    package_vars_wrong_format: "[{% for k,v in package_vars.iteritems() if v | type_debug != 'dict' %}'{{ k }}',{% endfor %}]"
+
+- name: Verify dict format for apt package combined variables
+  fail:
+    msg: "{{ lookup('template', 'package_vars_wrong_format_msg.j2') }}"
+  when: package_vars_wrong_format | count
+  vars:
+    package_vars:
+      memcached_packages: "{{ memcached_packages }}"
+    package_vars_wrong_format: "[{% for k,v in package_vars.iteritems() if v | type_debug != 'dict' %}'{{ k }}',{% endfor %}]"
+
 - name: Install memcached
   apt:
     name: "{{ item.key }}"
