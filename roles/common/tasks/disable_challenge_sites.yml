@@ -1,7 +1,13 @@
 ---
-- name: disable temporary challenge sites
+- name: Disable Nginx temporary challenge sites
   file:
     path: "{{ nginx_path }}/sites-enabled/letsencrypt-{{ item }}.conf"
     state: absent
   with_items: "{{ wordpress_sites.keys() }}"
+  when: web_server == "nginx"
+  notify: reload webserver
+
+- name: Disable Apache2 temporary challenge sites
+  command: a2disconf acme-challenge-location
+  when: web_server == "apache2"
   notify: reload webserver

@@ -3,6 +3,6 @@ apache2_ppa: "ppa:ondrej/apache2"
 apache2_package: apache2
 apache2_path: /etc/apache2
 apache2_disabled_mods: [mpm_prefork]
-apache2_enabled_mods: [http2, mpm_event, proxy_fcgi, setenvif, rewrite]
+apache2_enabled_mods: [http2, mpm_event, proxy_fcgi, setenvif, rewrite, headers, ssl]
 apache2_enabled_configs: [php7.2-fpm]
 apache2_disabled_configs: [serve-cgi-bin, localized-error-pages]

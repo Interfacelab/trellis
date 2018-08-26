@@ -6,3 +6,11 @@
     mode: 0640
   with_dict: "{{ wordpress_sites }}"
   when: ssl_enabled and item.value.ssl.client_cert_url is defined
+
+- name: Copy client cert
+  copy:
+    src: "{{ item.value.ssl.client_cert }}"
+    dest: "{{ apache2_ssl_path }}/client-{{ (item.value.ssl.client_cert | hash('md5'))[:7] }}.crt"
+    mode: 0640
+  with_dict: "{{ wordpress_sites }}"
+  when: ssl_enabled and item.value.ssl.client_cert is defined

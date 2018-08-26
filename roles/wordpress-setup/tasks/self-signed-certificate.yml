@@ -16,7 +16,7 @@ EOF\n
     -keyout {{ item.key | quote }}.key -out {{ item.key | quote }}.cert"
   args:
     executable: "/bin/bash"
-    chdir: "{{ nginx_ssl_path }}"
+    chdir: "{{ webserver_ssl_path }}"
     creates: "{{ item.key }}.*"
   with_dict: "{{ wordpress_sites | combine(ssl_default_site) }}"
   when:

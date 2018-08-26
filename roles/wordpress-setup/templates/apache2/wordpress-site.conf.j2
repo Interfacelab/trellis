@@ -1,6 +1,6 @@
 # {{ ansible_managed }}
 
-<VirtualHost *:80>
+<VirtualHost *:{{ ssl_enabled | ternary('443', '80') }}>
 	{% for serverName in site_hosts_canonical | union(multisite_subdomains_wildcards) %}
 	ServerName {{ serverName }}
 	{% endfor %}
@@ -12,6 +12,40 @@
 
 	ErrorLog {{ www_root }}/{{ item.key }}/logs/error.log
 	CustomLog {{ www_root }}/{{ item.key }}/logs/access.log combined
+
+	Header unset Upgrade
+
+  {% if ssl_enabled -%}
+  	# SSL configuration
+	SSLEngine on
+	SSLProtocol             all -SSLv2 -SSLv3
+	SSLCipherSuite          ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS
+	SSLHonorCipherOrder     on
+	SSLCompression          off
+	SSLOptions +StrictRequire
+
+	LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\"" vhost_combined
+	LogFormat "%v %h %l %u %t \"%r\" %>s %b" vhost_common
+
+  	#add_header Strict-Transport-Security "max-age={{ [hsts_max_age, hsts_include_subdomains, hsts_preload] | reject('none') | join('; ') }}";
+
+	{% if item.value.ssl.client_cert_url is defined -%}
+	SSLCACertificateFile  {{ apache2_ssl_path }}/client-{{ (item.value.ssl.client_cert_url | hash('md5'))[:7] }}.crt
+	{% elif item.value.ssl.client_cert is defined -%}
+	SSLCACertificateFile  {{ apache2_ssl_path }}/client-{{ (item.value.ssl.client_cert | hash('md5'))[:7] }}.crt
+	{% endif -%}
+
+	{% if item.value.ssl.provider | default('manual') == 'manual' and item.value.ssl.cert is defined and item.value.ssl.key is defined -%}
+	SSLCertificateFile        {{ apache2_path }}/ssl/{{ item.value.ssl.cert | basename }}
+	SSLCertificateKeyFile     {{ apache2_path }}/ssl/{{ item.value.ssl.key | basename }}
+	{% elif item.value.ssl.provider | default('manual') == 'letsencrypt' -%}
+	SSLCertificateFile        {{ apache2_path }}/ssl/letsencrypt/{{ item.key }}-{{ letsencrypt_cert_ids[item.key] }}-bundled.cert
+	SSLCertificateKeyFile     {{ apache2_path }}/ssl/letsencrypt/{{ item.key }}.key
+	{% elif item.value.ssl.provider | default('manual') == 'self-signed' -%}
+	SSLCertificateFile         	{{ nginx_path }}/ssl/{{ item.key }}.cert
+  	SSLCertificateKeyFile     	{{ nginx_path }}/ssl/{{ item.key }}.key
+  	{% endif -%}
+  {% endif -%}
 
 	<Directory "{{ www_root }}/{{ item.key }}/{{ item.value.current_path | default('current') }}/web/">
 		DirectoryIndex index.html index.php /index.php
@@ -28,6 +62,41 @@
 		RewriteRule . /index.php [L]
 		</IfModule>
 	</Directory>	
+
+	{% if ssl_enabled and ((item.value.ssl.client_cert_url is defined) or (item.value.ssl.client_cert is defined)) -%}
+	<Location />
+		Require all granted
+		SSLVerifyClient require
+	</Location>
+	{% endif -%}
 </VirtualHost>
+
+{% if ssl_enabled -%}
+<VirtualHost *:80>
+	{% for serverName in site_hosts_canonical | union(multisite_subdomains_wildcards) %}
+	ServerName {{ serverName }}
+	{% endfor %}
+
+	ServerAdmin webmaster@localhost
+	DocumentRoot {{ www_root }}/{{ item.key }}/{{ item.value.current_path | default('current') }}/web/
+	Protocols h2 h2c http/1.1
+
+	Header unset Upgrade
+
+	<Directory "{{ www_root }}/{{ item.key }}/{{ item.value.current_path | default('current') }}/web/">
+		Options FollowSymLinks
+		AllowOverride none
+		Require all granted
+	</Directory>
+
+	<Location />
+		Require all granted
+	</Location>
+
+	RewriteEngine On
+	RewriteCond %{HTTPS} !=on
+	RewriteRule .* https://%{HTTP:Host}%{REQUEST_URI} [L,R=permanent]
+</VirtualHost>
+{% endif -%}
 
 # vim: syntax=apache ts=4 sw=4 sts=4 sr noet

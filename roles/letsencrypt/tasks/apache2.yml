@@ -1,0 +1,39 @@
+---
+- name: Create Apache2 Acme Location
+  template:
+    src: apache2/acme-challenge-location.conf.j2
+    dest: "{{ apache2_path }}/conf-available/acme-challenge-location.conf"
+  
+- name: Enable Apache2 Acme Location
+  command: a2enconf acme-challenge-location
+
+- name: restart apache2
+  service:
+    name: apache2
+    state: reloaded
+
+- name: Create test Acme Challenge file
+  shell: touch {{ acme_tiny_challenges_directory }}/ping.txt
+  args:
+    creates: "{{ acme_tiny_challenges_directory }}/ping.txt"
+    warn: false
+
+- name: Test Acme Challenges
+  test_challenges:
+    hosts: "{{ site_hosts }}"
+  register: letsencrypt_test_challenges
+  ignore_errors: true
+  when: site_uses_letsencrypt
+  with_dict: "{{ wordpress_sites }}"  
+  debugger: on_failed
+
+- name: Notify of challenge failures
+  fail:
+    msg: >
+      Could not access the challenge file for the hosts/domains: {{ item.failed_hosts | join(', ') }}.
+      Let's Encrypt requires every domain/host be publicly accessible.
+      Make sure that a valid DNS record exists for {{ item.failed_hosts | join(', ') }} and that they point to this server's IP.
+      If you don't want these domains in your SSL certificate, then remove them from `site_hosts`.
+      See https://roots.io/trellis/docs/ssl for more details.
+  when: item is not skipped and item is failed
+  with_items: "{{ letsencrypt_test_challenges.results }}"

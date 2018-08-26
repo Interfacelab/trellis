@@ -34,7 +34,8 @@
     - { role: ssmtp, tags: [ssmtp, mail] }
     - { role: php, tags: [php] }
     - { role: memcached, tags: [memcached] }
-    - { role: nginx, tags: [nginx] }
+    - { role: apache2, tags: [apache2], when: web_server == 'apache2' }
+    - { role: nginx, tags: [nginx], when: web_server == 'nginx' }
     - { role: logrotate, tags: [logrotate] }
     - { role: composer, tags: [composer] }
     - { role: wp-cli, tags: [wp-cli] }

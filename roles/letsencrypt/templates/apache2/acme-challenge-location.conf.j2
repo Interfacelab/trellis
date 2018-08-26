@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+
+Alias "/.well-known/acme-challenge/" "{{ acme_tiny_challenges_directory }}/"
+<Directory "{{ acme_tiny_challenges_directory }}/">
+        Require all granted
+        <IfModule mod_rewrite.c>
+                RewriteEngine Off
+        </IfModule>
+</Directory>
+
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet

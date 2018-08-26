@@ -3,8 +3,8 @@
   tags: wordpress-setup-database
 - import_tasks: self-signed-certificate.yml
   tags: wordpress-setup-self-signed-certificate
-- import_tasks: nginx-client-cert.yml
-  tags: wordpress-setup-nginx-client-cert
+- import_tasks: client-cert.yml
+  tags: wordpress-setup-client-cert
 
 - name: Create web root
   file:

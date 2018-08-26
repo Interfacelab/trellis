@@ -2,6 +2,8 @@ site_uses_local_db: "{{ site_env.db_host == 'localhost' }}"
 apache2_wordpress_site_conf: apache2/wordpress-site.conf.j2
 nginx_wordpress_site_conf: nginx/wordpress-site.conf.j2
 nginx_ssl_path: "{{ nginx_path }}/ssl"
+apache2_ssl_path: "{{ apache2_path }}/ssl"
+webserver_ssl_path: "{{ nginx_ssl_path if (web_server == 'nginx') else apache2_ssl_path }}"
 
 ssl_default_site:
   no_default:

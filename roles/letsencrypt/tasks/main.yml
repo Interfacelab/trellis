@@ -1,6 +1,9 @@
 ---
 - import_tasks: setup.yml
 - import_tasks: nginx.yml
+  when: web_server == 'nginx'
+- import_tasks: apache2.yml
+  when: web_server == 'apache2'
 - import_tasks: certificates.yml
 
 - name: Install cronjob for key generation

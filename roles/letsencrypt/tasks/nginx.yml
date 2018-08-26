@@ -1,7 +1,7 @@
 ---
 - name: Create Nginx conf for challenges location
   template:
-    src: acme-challenge-location.conf.j2
+    src: nginx/acme-challenge-location.conf.j2
     dest: "{{ nginx_path }}/acme-challenge-location.conf"
 
 - name: Get list of hosts in current Nginx conf
@@ -15,7 +15,7 @@
 
 - name: Create needed Nginx confs for challenges
   template:
-    src: nginx-challenge-site.conf.j2
+    src: nginx/challenge-site.conf.j2
     dest: "{{ nginx_path }}/sites-available/letsencrypt-{{ item.key }}.conf"
   register: challenge_site_confs
   when:
@@ -35,7 +35,7 @@
   with_dict: "{{ wordpress_sites }}"
   notify: disable temporary challenge sites
 
-- import_tasks: "{{ playbook_dir }}/roles/common/tasks/reload_nginx.yml"
+- import_tasks: "{{ playbook_dir }}/roles/common/tasks/reload_webserver.yml"
   when: challenge_site_confs is changed or challenge_sites_enabled is changed
 
 - name: Create test Acme Challenge file
